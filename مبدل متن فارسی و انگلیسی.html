@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مبدل متن فارسی و انگلیسی</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #4a90e2;
+            --primary-hover: #357abd;
+            --border-color: #dddddd;
+        }
+
+        body {
+            font-family: 'vazirmatn RD FD',  'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+			font-family: inherit;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        #output {
+            background-color: #fafafa;
+            cursor: not-allowed;
+        }
+
+        /* کانتینر جدید برای دکمه کپی در پایین کادر خروجی */
+        .btn-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn-copy {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-copy:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-copy:active {
+            transform: scale(0.98);
+        }
+
+        .status-msg {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #27ae60;
+            height: 20px;
+            margin-top: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .status-msg.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🔄 مبدل متن فارسی و انگلیسی</h2>
+    
+    <div class="form-group">
+        <label for="input">متن تایپ شده (اشتباه):</label>
+        <textarea id="input" placeholder="متن خود را اینجا وارد کنید... (مثلاً sghl)"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="output">متن اصلاح شده (خروجی):</label>
+        <textarea id="output" readonly placeholder="اصلاح شده اینجا نمایش داده می‌شود..."></textarea>
+        
+        <div class="btn-container">
+            <button class="btn-copy" id="copyBtn">📋 کپی خروجی</button>
+        </div>
+    </div>
+
+    <div id="status" class="status-msg">متن با موفقیت کپی شد!</div>
+</div>
+
+<script>
+    // نقشه‌برداری کلیدها بر اساس شخصی‌سازی شما
+    const enToFa = {
+        'q':'ض', 'w':'ص', 'e':'ث', 'r':'ق', 't':'ف', 'y':'غ', 'u':'ع', 'i':'ه', 'o':'خ', 'p':'ح', '[':'ج', ']':'چ',
+        'a':'ش', 's':'س', 'd':'ی', 'f':'ب', 'g':'ل', 'h':'ا', 'j':'ت', 'k':'ن', 'l':'م', ';':'ک', "'":'گ',
+        'z':'ظ', 'x':'ط', 'c':'ز', 'v':'ر', 'b':'ذ', 'n':'د', 'm':'ئ', ',':'و', '.':'.', '/':'/',
+        'Q':'ض', 'W':'ص', 'E':'ث', 'R':'ق', 'T':'ف', 'Y':'غ', 'U':'ع', 'I':'ه', 'O':'خ', 'P':'ح', '{':'ج', '}':'چ',
+        'A':'ش', 'S':'س', 'D':'ی', 'F':'ب', 'G':'ل', 'H':'ا', 'J':'ت', 'K':'ن', 'L':'م', ':':'ک', '"':'گ',
+        'Z':'ظ', 'X':'ط', 'V':'ر', 'B':'ذ', 'N':'د', 'M':'ء', '<':'و', '>':'و', '?':'؟',
+        
+        // اصلاحات اختصاصی شما:
+        '\\': 'پ',  // دکمه بک‌اسلش برای پ
+        '|': 'پ',   // حالت شیفت بک‌اسلش برای پ
+        'C': 'ژ'    // حرف C بزرگ برای ژ
+    };
+
+    // ساخت معکوس مپ بالا برای تبدیل فارسی به انگلیسی
+    const faToEn = {};
+    for (let key in enToFa) {
+        if (enToFa.hasOwnProperty(key)) {
+            if (!faToEn[enToFa[key]] || (key >= 'a' && key <= 'z') || key === '\\' || key === 'C') {
+                faToEn[enToFa[key]] = key;
+            }
+        }
+    }
+    
+    // تنظیم دقیق نهایی برای تبدیل فارسی به انگلیسی
+    faToEn['پ'] = '\\';
+    faToEn['ژ'] = 'C';
+    faToEn['م'] = 'l';
+    faToEn['ک'] = ';';
+    faToEn['گ'] = "'";
+
+    // المان‌های DOM
+    const inputArea = document.getElementById('input');
+    const outputArea = document.getElementById('output');
+    const copyBtn = document.getElementById('copyBtn');
+    const statusMsg = document.getElementById('status');
+
+    // تابع اصلی تبدیل متن
+    function convertText(text) {
+        let result = '';
+        for (let i = 0; i < text.length; i++) {
+            let char = text[i];
+            
+            if (enToFa[char] !== undefined) {
+                result += enToFa[char];
+            } else if (faToEn[char] !== undefined) {
+                result += faToEn[char];
+            } else {
+                result += char;
+            }
+        }
+        return result;
+    }
+
+    // پردازش آنی هنگام تایپ
+    inputArea.addEventListener('input', () => {
+        outputArea.value = convertText(inputArea.value);
+    });
+
+    // عملکرد دکمه کپی
+    copyBtn.addEventListener('click', () => {
+        if (!outputArea.value) return;
+        
+        navigator.clipboard.writeText(outputArea.value).then(() => {
+            statusMsg.classList.add('show');
+            setTimeout(() => {
+                statusMsg.classList.remove('show');
+            }, 2000);
+        }).catch(err => {
+            console.error('خطا در کپی متن: ', err);
+        });
+    });
+</script>
+
+</body>
+</html>
